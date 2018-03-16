@@ -1,12 +1,19 @@
-
 /*
- * mm-naive.c - The fastest, least memory-efficient malloc package.
+ * The allocator is implemented using an implicit list of blocks of memory. Each block consists of a header that contains the size of the payload along with with an allocation flag, the payload, and a footer that contains the same information as the header.
  *
- * In this naive approach, a block is allocated by simply incrementing
- * the brk pointer.  A block is pure payload. There are no headers or
- * footers.  Blocks are never coalesced or reused. Realloc is
- * implemented directly using mm_malloc and mm_free.
- *
+ *  Allocated and free block looks like:
+    -------------------
+ *  | block size  | a |  HEADER (4 bytes)
+ *  -------------------
+ *  |                 |
+ *  |    payload      |
+ *  |                 |
+ *  -------------------
+ *  |   padding      |   (if necessary)
+ *  -------------------
+ *  | block size  | a |  FOOTER (4 bytes)
+ *  |             |   |
+ *  -------------------
  * NOTE TO STUDENTS: Replace this header comment with your own header
  * comment that gives a high level description of your solution.
  */
@@ -229,16 +236,17 @@ static void *coalesce(void *ptr)
     size_t next_alloc = GET_ALLOC(HDRP(NEXT_BLKP(ptr)));
     size_t size = GET_SIZE(HDRP(ptr));
     
+    //case 1 --> both adjacent blocks are allocated, no coalescing possible
     if (prev_alloc && next_alloc){
         return ptr;
     }
-    
+    //case 2 --> current block is merged with the next block
     else if (prev_alloc && !next_alloc){
         size += GET_SIZE(HDRP(NEXT_BLKP(ptr)));
         PUT(HDRP(ptr), PACK(size, 0));
         PUT(FTRP(ptr), PACK(size, 0));
     }
-    
+    // case 3 --> previous block is merged with current block
     else if(!prev_alloc && next_alloc){
         size += GET_SIZE(HDRP(PREV_BLKP(ptr)));
         PUT(FTRP(ptr), PACK(size, 0));
@@ -246,7 +254,7 @@ static void *coalesce(void *ptr)
         ptr = PREV_BLKP(ptr);
         
     }
-    
+    // case 4 --> all three blocks are merged to form single block
     else{
         size += GET_SIZE(HDRP(PREV_BLKP(ptr))) + GET_SIZE(FTRP(NEXT_BLKP(ptr)));
         PUT(HDRP(PREV_BLKP(ptr)), PACK(size, 0));
@@ -271,7 +279,7 @@ void *mm_realloc(void *ptr, size_t size)
     //size_t newBlockSize = size + (2*WSIZE);
     
     //check to make sure size is not less than or equal to 0. If so, return null or (
-        // if equal to 0, free the ptr and return null
+    // if equal to 0, free the ptr and return null
     
     if(size <= 0){
         mm_free(ptr);
@@ -328,16 +336,11 @@ int mm_check(void){
         }
         tempPtr = NEXT_BLKP(tempPtr);
     }
-
-           
+    
+    
+    
+    
     //return 1 if everything works
     return 1;
-
+    
 }
-
-
-
-
-
-
-
