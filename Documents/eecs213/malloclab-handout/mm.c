@@ -81,6 +81,7 @@ static void *extend_heap(size_t words);
 static void *find_fit(size_t asize);
 static void place(void *ptr, size_t asize);
 static void *coalesce(void *ptr);
+int mm_check(void);
 
 /*
  * mm_init - initialize the malloc package.
@@ -308,16 +309,31 @@ void *mm_realloc(void *ptr, size_t size)
     mm_free(ptr);
     
     return newptr;
-    
-    
-    
 }
 
 
+/*
+ * mm_check - checks heap consistency when change to heap is made
+ */
+int mm_check(void){
+    
+    char *tempPtr=0;
+    
+    
+    //check to see if allocated blocks overlap
+    tempPtr = heap_listp;
+    while (heap_listp) {
+        if(FTRP(tempPtr) >= HDRP(NEXT_BLKP(tempPtr))){
+            return 0;
+        }
+        tempPtr = NEXT_BLKP(tempPtr);
+    }
 
+           
+    //return 1 if everything works
+    return 1;
 
-
-
+}
 
 
 
