@@ -2,7 +2,7 @@
  * The allocator is implemented using an implicit list of blocks of memory. Each block consists of a header that contains the size of the payload along with with an allocation flag, the payload, and a footer that contains the same information as the header.
  *
  *  Allocated and free block looks like:
-    -------------------
+ -------------------
  *  | block size  | a |  HEADER (4 bytes)
  *  -------------------
  *  |                 |
@@ -195,7 +195,7 @@ static void *find_fit(size_t asize)
 
 
 /*
- * place -
+ * place - change headers and footers to reflect fact that block has now been allocated
  *
  */
 static void place(void *ptr, size_t asize)
@@ -297,9 +297,9 @@ void *mm_realloc(void *ptr, size_t size)
         
         size = asize;
         /*if the leftover size of the block after the new block is placed is less than the min_block_size,
-        // there is not enough space to create a new block, thus, we should just return the
-            ptr without updating the headers or footers
-        */
+         // there is not enough space to create a new block, thus, we should just return the
+         ptr without updating the headers or footers
+         */
         if (copySize-size <= MIN_BLOCK_SIZE) {
             return oldptr;
         }
