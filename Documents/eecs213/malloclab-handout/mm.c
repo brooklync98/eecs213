@@ -273,7 +273,8 @@ static void *coalesce(void *ptr)
  */
 void *mm_realloc(void *ptr, size_t size)
 {
-    size_t oldsize = GET_SIZE(HDRP(ptr));
+    size_t copySize = GET_SIZE(HDRP(ptr));
+    void *oldptr = ptr;
     void *newptr;
     size_t asize = MAX(ALIGN(size) + DSIZE, MIN_BLOCK_SIZE);
     //size_t newBlockSize = size + (2*WSIZE);
@@ -282,36 +283,39 @@ void *mm_realloc(void *ptr, size_t size)
     // if equal to 0, free the ptr and return null
     
     if(size <= 0){
-        mm_free(ptr);
+        mm_free(oldptr);
         return NULL;
     }
     
     //if the sizes are the same, don't need to reallocate anything, and you can return same ptr
     
-    if (asize == oldsize) {
-        return ptr;
+    if (asize == copySize) {
+        return oldptr;
     }
     
-    if(asize <= oldsize){
+    if(asize <= copySize){
         
         size = asize;
-        
-        if (oldsize-size <= MIN_BLOCK_SIZE) {
-            return ptr;
+        /*if the leftover size of the block after the new block is placed is less than the min_block_size,
+        // there is not enough space to create a new block, thus, we should just return the
+            ptr without updating the headers or footers
+        */
+        if (copySize-size <= MIN_BLOCK_SIZE) {
+            return oldptr;
         }
-        PUT(HDRP(ptr), PACK(size, 1));
-        PUT(FTRP(ptr), PACK(size, 1));
-        PUT(HDRP(NEXT_BLKP(ptr)), PACK(size, 1));
-        mm_free(NEXT_BLKP(ptr));
-        return ptr;
+        PUT(HDRP(oldptr), PACK(size, 1));
+        PUT(FTRP(oldptr), PACK(size, 1));
+        PUT(HDRP(NEXT_BLKP(oldptr)), PACK(size, 1));
+        mm_free(NEXT_BLKP(oldptr));
+        return oldptr;
     }
     
     newptr = mm_malloc(size);
     
     
-    if(size < oldsize)
-        oldsize = size;
-    memcpy(newptr, ptr, oldsize);
+    if(size < copySize)
+        copySize = size;
+    memcpy(newptr, ptr, copySize);
     
     /* Free the old block. */
     mm_free(ptr);
